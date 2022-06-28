@@ -24,6 +24,8 @@ dts-dirs += sprd
 dts-dirs += xilinx
 dts-dirs += lg
 dts-dirs += zte
+#add oplus dts dir
+dts-dirs += oplus
 
 subdir-y	:= $(dts-dirs)
 

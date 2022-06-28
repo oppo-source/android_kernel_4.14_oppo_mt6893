@@ -1,0 +1,30 @@
+&odm {
+	oplus_devinfo:oplus_devinfo {
+	compatible = "oppo-devinfo";
+	main-sub {
+		compatible = "hw-match, main-sub";
+		aboard-patterns = <0 0>;
+		/*main board*/
+		match-projects = <20615 20619>;
+	};
+	};
+};
+//#ifdef OPLUS_FEATURE_CHG_BASIC
+&lk_charger{
+	charger_by_buckboost;
+	support_tuv_authentication;
+};
+//#endif
+&i2c8 {
+       status = "okay";
+       nfc_nxp@28 {
+               compatible = "nxp,pn544";
+               reg = <0x28>;
+               nxp,pn544-irq = <&pio 7 0x0>;
+               nxp,pn544-ven = <&pio 16 0x0>;
+               nxp,pn544-fw-dwnld = <&pio 6 0x0>;
+               nxp,pn544-clkreq = <&pio 17 0x0>;
+               interrupt-parent = <&pio>;
+       };
+};
+//#endif /* OPLUS_FEATURE_NFC_BRINGUP */

@@ -37,6 +37,10 @@
 #include <linux/iio/consumer.h>
 #include <linux/iio/iio.h>
 #endif
+//#ifdef OPLUS_TEMP_NTC
+#include "oplus_tempntc.h"
+//#endif
+
 /*=============================================================
  *Weak functions
  *=============================================================
@@ -502,7 +506,7 @@ static __s32 mtkts_btsnrpa_thermistor_conver_temp(__s32 Res)
 	int i = 0;
 	int asize = 0;
 	__s32 RES1 = 0, RES2 = 0;
-	__s32 TAP_Value = -200, TMP1 = 0, TMP2 = 0;
+	__s32 TAP_Value = -2000, TMP1 = 0, TMP2 = 0;
 
 #ifdef APPLY_PRECISE_BTS_TEMP
 	TAP_Value = TAP_Value * 1000;
@@ -546,6 +550,7 @@ static __s32 mtkts_btsnrpa_thermistor_conver_temp(__s32 Res)
 			 * TMP1 = %d\n",__LINE__,i,RES1,TMP1);
 			 */
 		}
+
 #ifdef APPLY_PRECISE_BTS_TEMP
 		TAP_Value = mult_frac((((Res - RES2) * TMP1) +
 			((RES1 - Res) * TMP2)), 1000, (RES1 - RES2));
@@ -767,8 +772,13 @@ int mtkts_btsnrpa_get_hw_temp(void)
 
 static int mtkts_btsnrpa_get_temp(struct thermal_zone_device *thermal, int *t)
 {
-	*t = mtkts_btsnrpa_get_hw_temp();
-
+//#ifdef OPLUS_TEMPNTC
+	if (is_ntc_switch_projects()) {
+		*t = oplus_get_pa2_con_temp();
+	} else {
+		*t = mtkts_btsnrpa_get_hw_temp();
+	}
+//#endif
 	if ((int)*t > 52000)
 		mtkts_btsnrpa_dprintk("T=%d\n", (int)*t);
 

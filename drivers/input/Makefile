@@ -30,4 +30,9 @@ obj-$(CONFIG_INPUT_APMPOWER)	+= apm-power.o
 obj-$(CONFIG_INPUT_KEYRESET)	+= keyreset.o
 obj-$(CONFIG_INPUT_KEYCOMBO)	+= keycombo.o
 
+#ifdef VENDOR_EDIT
+#obj-$(CONFIG_MTK_FINGERPRINT_SUPPORT)  += fingerprint/
+obj-$(CONFIG_OPLUS_FINGERPRINT)  += oppo_fp_drivers/
+obj-$(CONFIG_OPLUS_SECURE)  += oplus_secure_drivers/
+#endif /*VENDOR_EDIT*/
 obj-$(CONFIG_RMI4_CORE)		+= rmi4/

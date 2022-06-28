@@ -27,9 +27,27 @@
 #define SENINF_WR32(addr, data)    mt_reg_sync_writel(data, addr)
 #define SENINF_RD32(addr)          ioread32((void *)addr)
 #ifdef _CAM_MUX_SWITCH
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#define MAX_SWAP_TIMES 3
+#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 #define CAM_TG_NUM 3
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+#define MAX_CAM_CNT CAM_TG_NUM
+#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 #define CAM_MUX_NUM 13
+#ifndef OPLUS_FEATURE_CAMERA_COMMON
 static unsigned int _tg_map_cam_2_sv[CAM_TG_NUM] = {0xff, 0xff, 0xff};
+#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+
+struct swap_cammux_info_cache {
+	unsigned int swap_cam_mux_src[MAX_SWAP_TIMES];
+	unsigned int swap_cam_mux_dest[MAX_SWAP_TIMES];
+	unsigned int used;
+};
+
+static struct swap_cammux_info_cache swapping_cammux[MAX_CAM_CNT];
+
+#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 void _swap_data_cam_mux(unsigned int cam_tg_offset,
 			unsigned int camsv_tg_offset, struct SENINF *pseninf)
 {
@@ -47,10 +65,17 @@ void _swap_data_cam_mux(unsigned int cam_tg_offset,
 		cam_tg_offset, SENINF_RD32(pseninf->pseninf_base[0] + cam_tg_offset),
 		camsv_tg_offset, SENINF_RD32(pseninf->pseninf_base[0] + camsv_tg_offset));
 }
+#ifndef OPLUS_FEATURE_CAMERA_COMMON
 extern MINT32 _switch_tg_for_stagger(unsigned int cam_tg, struct SENINF *pseninf)
+#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+
+static MINT32 __do_swap(unsigned int tg_src, unsigned int tg_dest, struct SENINF *pseninf)
+#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 {
 	int ret = -1;
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	unsigned int camsv_tg = 0xff;
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	unsigned int cam_src = 0xf;
 	unsigned int sv_src = 0xf;
 	unsigned int cam_mux_ctrl_addr_offset = 0xFFFFFFFF;
@@ -60,37 +85,69 @@ extern MINT32 _switch_tg_for_stagger(unsigned int cam_tg, struct SENINF *pseninf
 	unsigned int cam_mux_ctrl_value = 0xFFFFFFFF;
 	unsigned int sv_mux_ctrl_value = 0xFFFFFFFF;
 
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	pr_debug("%s input cam_tg number = %d _tg_map_cam_2_sv 0x%x 0x%x 0x%x",
 		__func__, cam_tg, _tg_map_cam_2_sv[0], _tg_map_cam_2_sv[1], _tg_map_cam_2_sv[2]);
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	pr_debug("%s TG_SRC[%d] to TG_DEST[%d]", __func__, tg_src, tg_dest);
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	if (cam_tg < CAM_TG_NUM) {
 		camsv_tg = _tg_map_cam_2_sv[cam_tg];
 		if (camsv_tg > CAM_MUX_NUM || camsv_tg == cam_tg) {
 			pr_debug("%s invalid camsv_tg number = %d", __func__, camsv_tg);
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	if (tg_src < CAM_TG_NUM) {
+		if (tg_dest > CAM_MUX_NUM || tg_dest == tg_src) {
+			pr_debug("%s invalid tg_dest number = %d", __func__, tg_dest);
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 			return 0;
 		}
 	/* switch content of cam_mux */
 
 	#define SENINF_CAM_MUX0_OPT 0x0420
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	_swap_data_cam_mux(SENINF_CAM_MUX0_OPT + (cam_tg * 4),
 		SENINF_CAM_MUX0_OPT + (camsv_tg * 4), pseninf);
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	_swap_data_cam_mux(SENINF_CAM_MUX0_OPT + (tg_src * 4),
+		SENINF_CAM_MUX0_OPT + (tg_dest * 4), pseninf);
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	#define SENINF_CAM_MUX0_CHK_CTL_0 0x0500
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	_swap_data_cam_mux(SENINF_CAM_MUX0_CHK_CTL_0 + (cam_tg * 0x10),
 		SENINF_CAM_MUX0_CHK_CTL_0 + (camsv_tg * 0x10), pseninf);
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	_swap_data_cam_mux(SENINF_CAM_MUX0_CHK_CTL_0 + (tg_src * 0x10),
+		SENINF_CAM_MUX0_CHK_CTL_0 + (tg_dest * 0x10), pseninf);
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 	#define SENINF_CAM_MUX0_CHK_CTL_1 0x0504
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	_swap_data_cam_mux(SENINF_CAM_MUX0_CHK_CTL_1 + (cam_tg * 0x10),
 		SENINF_CAM_MUX0_CHK_CTL_1 + (camsv_tg * 0x10), pseninf);
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	_swap_data_cam_mux(SENINF_CAM_MUX0_CHK_CTL_1 + (tg_src * 0x10),
+		SENINF_CAM_MUX0_CHK_CTL_1 + (tg_dest * 0x10), pseninf);
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 	#define SENINF_CAM_MUX_CTRL_0 0x0400
 	#define SENINF_CAM_MUX_CTRL_1 0x0404
 	#define SENINF_CAM_MUX_CTRL_2 0x0408
 	#define SENINF_CAM_MUX_CTRL_3 0x040c
 
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		cam_mux_ctrl_addr_offset = SENINF_CAM_MUX_CTRL_0 + 4 * (cam_tg / 4);
 		cam_mux_ctrl_digit_offset = cam_tg % 4;
 		sv_mux_ctrl_addr_offset = SENINF_CAM_MUX_CTRL_0 + 4 * (camsv_tg / 4);
 		sv_mux_ctrl_digit_offset = camsv_tg % 4;
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		cam_mux_ctrl_addr_offset = SENINF_CAM_MUX_CTRL_0 + 4 * (tg_src / 4);
+		cam_mux_ctrl_digit_offset = tg_src % 4;
+		sv_mux_ctrl_addr_offset = SENINF_CAM_MUX_CTRL_0 + 4 * (tg_dest / 4);
+		sv_mux_ctrl_digit_offset = tg_dest % 4;
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 		pr_debug("before cam 0x%x = 0x%x, sv 0x%x = 0x%x\n",
 			cam_mux_ctrl_addr_offset,
@@ -132,14 +189,56 @@ extern MINT32 _switch_tg_for_stagger(unsigned int cam_tg, struct SENINF *pseninf
 			SENINF_RD32(pseninf->pseninf_base[0] + cam_mux_ctrl_addr_offset),
 			sv_mux_ctrl_addr_offset,
 			SENINF_RD32(pseninf->pseninf_base[0] + sv_mux_ctrl_addr_offset));
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		_tg_map_cam_2_sv[cam_tg] = 0xff;
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 		ret = 0;
 	} else
+		#ifndef OPLUS_FEATURE_CAMERA_COMMON
 		pr_debug("%s invalid cam_tg number = %d", __func__, cam_tg);
+		#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+		pr_debug("%s invalid cam_tg number = %d", __func__, tg_src);
+		#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	return ret;
 }
+#ifndef OPLUS_FEATURE_CAMERA_COMMON
 extern MINT32 _seninf_set_tg_for_switch(unsigned int cam_tg, unsigned int camsv_tg)
+#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+
+extern MINT32 _switch_tg_for_stagger(unsigned int cam_tg, struct SENINF *pseninf)
 {
+	unsigned int i = 0;
+	struct swap_cammux_info_cache *p_cache = NULL;
+
+	if (cam_tg >= MAX_CAM_CNT) {
+		pr_debug("%s camtg[%d] exceeds cam cnt[%d]", __func__, cam_tg, MAX_CAM_CNT);
+		return 0;
+	}
+
+	p_cache = &swapping_cammux[cam_tg];
+
+	pr_debug("%s used[%d] swap_cam_mux(src->dest): 0x%x->0x%x; 0x%x->0x%x; 0x%x->0x%x;",
+		__func__, p_cache->used,
+		p_cache->swap_cam_mux_src[0], p_cache->swap_cam_mux_dest[0],
+		p_cache->swap_cam_mux_src[1], p_cache->swap_cam_mux_dest[1],
+		p_cache->swap_cam_mux_src[2], p_cache->swap_cam_mux_dest[2]);
+
+	for (; i < p_cache->used; ++i) {
+		__do_swap(p_cache->swap_cam_mux_src[i],
+				p_cache->swap_cam_mux_dest[i], pseninf);
+
+		p_cache->swap_cam_mux_src[i] = 0;
+		p_cache->swap_cam_mux_dest[i] = 0;
+	}
+
+	p_cache->used = 0;
+	return 0;
+}
+
+extern MINT32 _seninf_set_tg_for_switch(unsigned int cam_tg_src, unsigned int cam_tg_dest)
+#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
+{
+	#ifndef OPLUS_FEATURE_CAMERA_COMMON
 	pr_debug("%s cam_tg number = %d camsv_tg = %d",
 			__func__, cam_tg, camsv_tg);
 	if (cam_tg < CAM_TG_NUM)
@@ -147,6 +246,29 @@ extern MINT32 _seninf_set_tg_for_switch(unsigned int cam_tg, unsigned int camsv_
 	else
 		pr_debug("%s invalid cam_tg number = %d camsv_tg = %d",
 			__func__, cam_tg, camsv_tg);
+	#else /*OPLUS_FEATURE_CAMERA_COMMON*/
+	struct swap_cammux_info_cache *p_cache = NULL;
+
+	if (cam_tg_src >= MAX_CAM_CNT) {
+		pr_debug("%s camtg[%d] exceeds cam cnt[%d]", __func__, cam_tg_src, MAX_CAM_CNT);
+		return 0;
+	}
+
+	p_cache = &swapping_cammux[cam_tg_src];
+
+	if (p_cache->used >= MAX_SWAP_TIMES) {
+		pr_debug("%d pairs of swap are already set", p_cache->used);
+		return 0;
+	}
+
+	pr_debug("%s from TG[%d] to TG[%d]", __func__, cam_tg_src, cam_tg_dest);
+
+	p_cache->swap_cam_mux_src[p_cache->used] = cam_tg_src;
+	p_cache->swap_cam_mux_dest[p_cache->used] = cam_tg_dest;
+
+	p_cache->used++;
+
+	#endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 	return 0;
 }
 

@@ -29,6 +29,7 @@
 #define CMDQ_OP_CODE_MASK		(0xff << CMDQ_OP_CODE_SHIFT)
 #define CMDQ_IRQ_MASK			GENMASK(CMDQ_THR_MAX_COUNT - 1, 0)
 
+#define CMDQ_CORE_REST			0x0
 #define CMDQ_CURR_IRQ_STATUS		0x10
 #define CMDQ_CURR_LOADED_THR		0x18
 #define CMDQ_THR_SLOT_CYCLES		0x30
@@ -70,6 +71,7 @@
 #define CMDQ_THR_RESUME			0x0
 #define CMDQ_THR_STATUS_SUSPENDED	BIT(1)
 #define CMDQ_THR_DO_WARM_RESET		BIT(0)
+#define CMDQ_THR_DO_HARD_RESET		BIT(16)
 #define CMDQ_THR_ACTIVE_SLOT_CYCLES	0x3200
 #define CMDQ_INST_CYCLE_TIMEOUT		0x0
 #define CMDQ_THR_IRQ_DONE		0x1
@@ -160,7 +162,7 @@ struct cmdq {
 	bool			suspended;
 	atomic_t		usage;
 	struct workqueue_struct *timeout_wq;
-	struct wakeup_source	wake_lock;
+	struct wakeup_source	*wake_lock;
 	bool			wake_locked;
 	spinlock_t		lock;
 	u32			token_cnt;
@@ -257,7 +259,7 @@ static void cmdq_lock_wake_lock(struct cmdq *cmdq, bool lock)
 
 	if (lock) {
 		if (!cmdq->wake_locked) {
-			__pm_stay_awake(&cmdq->wake_lock);
+			__pm_stay_awake(cmdq->wake_lock);
 			cmdq->wake_locked = true;
 		} else  {
 			/* should not reach here */
@@ -267,7 +269,7 @@ static void cmdq_lock_wake_lock(struct cmdq *cmdq, bool lock)
 		}
 	} else {
 		if (cmdq->wake_locked) {
-			__pm_relax(&cmdq->wake_lock);
+			__pm_relax(cmdq->wake_lock);
 			cmdq->wake_locked = false;
 		} else {
 			/* should not reach here */
@@ -305,6 +307,8 @@ static s32 cmdq_clk_enable(struct cmdq *cmdq)
 #if IS_ENABLED(CONFIG_MACH_MT6873) || IS_ENABLED(CONFIG_MACH_MT6853)
 		writel((0x7 << 16) + 0x7, cmdq->base + GCE_GCTL_VALUE);
 		writel(0, cmdq->base + GCE_DEBUG_START_ADDR);
+#else
+		writel(0, cmdq->base + GCE_GCTL_VALUE);
 #endif
 		/* make sure pm not suspend */
 		cmdq_lock_wake_lock(cmdq, true);
@@ -345,6 +349,8 @@ static void cmdq_clk_disable(struct cmdq *cmdq)
 		/* clear tpr mask */
 		writel(0, cmdq->base + CMDQ_TPR_MASK);
 #if IS_ENABLED(CONFIG_MACH_MT6873) || IS_ENABLED(CONFIG_MACH_MT6853)
+		writel(0x7, cmdq->base + GCE_GCTL_VALUE);
+#else
 		writel(0x7, cmdq->base + GCE_GCTL_VALUE);
 #endif
 		/* now allow pm suspend */
@@ -393,6 +399,14 @@ void cmdq_thread_set_spr(struct mbox_chan *chan, u8 id, u32 val)
 	writel(val, thread->base + CMDQ_THR_SPR + id * 4);
 }
 
+static int cmdq_core_reset(struct cmdq *cmdq)
+{
+	cmdq_msg("%s hwid:%d", __func__, cmdq->hwid);
+	writel(CMDQ_THR_DO_HARD_RESET, cmdq->base + CMDQ_CORE_REST);
+	writel(0, cmdq->base + CMDQ_CORE_REST);
+	return 0;
+}
+
 static int cmdq_thread_suspend(struct cmdq *cmdq, struct cmdq_thread *thread)
 {
 	u32 status;
@@ -411,6 +425,8 @@ static int cmdq_thread_suspend(struct cmdq *cmdq, struct cmdq_thread *thread)
 			status, status & CMDQ_THR_STATUS_SUSPENDED, 0, 100)) {
 		cmdq_err("suspend GCE thread 0x%x failed",
 			(u32)(thread->base - cmdq->base));
+		if (thread->chan)
+			cmdq_util_dump_dbg_reg(thread->chan);
 		return -EFAULT;
 	}
 
@@ -440,6 +456,8 @@ int cmdq_thread_reset(struct cmdq *cmdq, struct cmdq_thread *thread)
 			warm_reset, !(warm_reset & CMDQ_THR_DO_WARM_RESET),
 			0, 10)) {
 		cmdq_err("reset GCE thread %u failed", thread->idx);
+		if (thread->chan)
+			cmdq_util_dump_dbg_reg(thread->chan);
 		return -EFAULT;
 	}
 	writel(CMDQ_THR_ACTIVE_SLOT_CYCLES, cmdq->base + CMDQ_THR_SLOT_CYCLES);
@@ -624,7 +642,7 @@ void cmdq_init_cmds(void *dev_cmdq)
 	struct cmdq *cmdq = dev_cmdq;
 	struct cmdq_thread *thread = &cmdq->thread[0];
 	dma_addr_t pc, end;
-	int i;
+	u32 status;
 
 	cmdq_trace_ex_begin("%s", __func__);
 
@@ -642,14 +660,15 @@ void cmdq_init_cmds(void *dev_cmdq)
 		cmdq_err("clear event instructions timeout pc:%#lx end:%#lx",
 			(unsigned long)pc,
 			(unsigned long)end);
-		for (i = 0; i < ARRAY_SIZE(cmdq->thread); i++)
-			if (cmdq->thread->chan) {
-				cmdq_err("%s cmdq:%d thread:%d i:%d",
-					__func__, cmdq->hwid, thread->idx, i);
-				cmdq_util_dump_dbg_reg(cmdq->thread->chan);
-				break;
-			}
+		writel(CMDQ_THR_SUSPEND, thread->base + CMDQ_THR_SUSPEND_TASK);
+		if (readl_poll_timeout_atomic(thread->base + CMDQ_THR_CURR_STATUS,
+				status, status & CMDQ_THR_STATUS_SUSPENDED, 0, 1000)) {
+			cmdq_err("suspend GCE thread 0x%x failed",
+				(u32)(thread->base - cmdq->base));
+		}
+		cmdq_core_reset(cmdq);
 		cmdq_thread_reset(cmdq, thread);
+		cmdq_init_cpu(cmdq);
 	}
 	writel(CMDQ_THR_DISABLED, thread->base + CMDQ_THR_ENABLE_TASK);
 
@@ -1690,6 +1709,7 @@ static int cmdq_remove(struct platform_device *pdev)
 {
 	struct cmdq *cmdq = platform_get_drvdata(pdev);
 
+	wakeup_source_unregister(cmdq->wake_lock);
 	destroy_workqueue(cmdq->buf_dump_wq);
 	mbox_controller_unregister(&cmdq->mbox);
 	clk_unprepare(cmdq->clock_timer);
@@ -1988,7 +2008,7 @@ static int cmdq_probe(struct platform_device *pdev)
 	WARN_ON(clk_prepare(cmdq->clock) < 0);
 	WARN_ON(clk_prepare(cmdq->clock_timer) < 0);
 
-	wakeup_source_add(&cmdq->wake_lock);
+	cmdq->wake_lock = wakeup_source_register(dev, "cmdq_pm_lock");
 
 	spin_lock_init(&cmdq->lock);
 	clk_enable(cmdq->clock);
@@ -2056,8 +2076,23 @@ void cmdq_mbox_enable(void *chan)
 {
 	struct cmdq *cmdq = container_of(((struct mbox_chan *)chan)->mbox,
 		typeof(*cmdq), mbox);
+	struct cmdq_thread *thread = ((struct mbox_chan *)chan)->con_priv;
+	s32 user_usage = -1;
+
+	if (!thread) {
+		cmdq_err("thread is NULL");
+		dump_stack();
+		return;
+	}
 
 	WARN_ON(clk_prepare(cmdq->clock) < 0);
+
+	user_usage = atomic_inc_return(&thread->user_usage);
+	WARN_ON(user_usage <= 0);
+	if (user_usage <= 0) {
+		cmdq_err("thd%d user_usage:%d", thread->idx, user_usage);
+		dump_stack();
+	}
 	cmdq_clk_enable(cmdq);
 }
 
@@ -2065,6 +2100,24 @@ void cmdq_mbox_disable(void *chan)
 {
 	struct cmdq *cmdq = container_of(((struct mbox_chan *)chan)->mbox,
 		typeof(*cmdq), mbox);
+	struct cmdq_thread *thread = ((struct mbox_chan *)chan)->con_priv;
+	s32 user_usage = -1;
+
+	if (!thread) {
+		cmdq_err("thread is NULL");
+		dump_stack();
+		return;
+	}
+
+	user_usage = atomic_dec_return(&thread->user_usage);
+	WARN_ON(user_usage < 0);
+	if (user_usage < 0) {
+		atomic_inc(&thread->user_usage);
+		cmdq_err("%s thd%d, usage:%d, cannot disable",
+			__func__, thread->idx, user_usage);
+		dump_stack();
+		return;
+	}
 
 	cmdq_clk_disable(cmdq);
 	clk_unprepare(cmdq->clock);

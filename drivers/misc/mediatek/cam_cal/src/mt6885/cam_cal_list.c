@@ -17,8 +17,21 @@
 #include "kd_imgsensor.h"
 
 #define MAX_EEPROM_SIZE_16K 0x4000
+#define MAX_EEPROM_SIZE_32K 0x8000
 
 struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
+	#ifdef VENDOR_EDIT
+	{OV64B_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX766_SENSOR_ID_20817, 0xA0, Common_read_region, MAX_EEPROM_SIZE_32K},
+	{IMX766_SENSOR_ID_21015, 0xA2, Common_read_region, MAX_EEPROM_SIZE_32K},
+	{IMX615_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX355_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX615_SENSOR_ID_20817, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX355_SENSOR_ID_20817, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{OV02B10_SENSOR_ID, 0xA4, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX616_SENSOR_ID, 0xA8, Common_read_region, MAX_EEPROM_SIZE_16K},
+	{IMX319_SENSOR_ID, 0xA2, Common_read_region, MAX_EEPROM_SIZE_16K},
+	#else
 	/*Below is commom sensor */
 	{IMX586_SENSOR_ID, 0xA0, Common_read_region, MAX_EEPROM_SIZE_16K,
 		BL24SA64_write_region},
@@ -37,11 +50,12 @@ struct stCAM_CAL_LIST_STRUCT g_camCalList[] = {
 	{IMX350_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX386_MONO_SENSOR_ID, 0xA0, Common_read_region},
 	{IMX499_SENSOR_ID, 0xA0, Common_read_region},
-	{S5KJD1_SENSOR_ID, 0xB0, Common_read_region, DEFAULT_MAX_EEPROM_SIZE_8K,
-		DW9763_write_region},
+        {S5KJD1_SENSOR_ID, 0xB0, Common_read_region, DEFAULT_MAX_EEPROM_SIZE_8K,
+                DW9763_write_region},
 	{IMX481_SENSOR_ID, 0xA4, Common_read_region, DEFAULT_MAX_EEPROM_SIZE_8K,
 		BL24SA64_write_region},
-	/*  ADD before this line */
+	#endif	
+/*  ADD before this line */
 	{0, 0, 0}       /*end of list */
 };
 

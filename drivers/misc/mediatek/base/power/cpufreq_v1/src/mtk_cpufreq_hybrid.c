@@ -45,6 +45,10 @@
 #include <trace/events/power.h>
 /* #include <trace/events/mtk_events.h> */
 
+#if defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED)
+#include <linux/task_sched_info.h>
+#endif /* defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED) */
+
 #if defined(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) && \
 	!defined(CONFIG_MTK_TINYSYS_MCUPM_SUPPORT)
 #include "v1/sspm_ipi.h"
@@ -375,6 +379,9 @@ int Ripi_cpu_dvfs_thread(void *data)
 										    0);
 				}
 #endif
+#if defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED)
+				update_freq_limit_info(p->mt_policy);
+#endif /* defined(OPLUS_FEATURE_TASK_CPUSTATS) && defined(CONFIG_OPLUS_SCHED) */
 				trace_cpu_frequency_limits(p->mt_policy->max,
 					p->mt_policy->min,
 					p->mt_policy->cpu);

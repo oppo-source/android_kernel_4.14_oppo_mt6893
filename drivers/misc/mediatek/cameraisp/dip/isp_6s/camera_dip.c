@@ -1213,6 +1213,37 @@ static signed int DIP_Dump_IMGSYS_DIP_Reg(void)
 			DipDumpTL[DIPNo].region,
 			DIP_RD32(dipRegBasAddr + 0x6440));
 
+		/*DCE register dump*/
+		cmdq_util_err("dip (DCE): 0x%x7080(0x%x)-0x%x7084(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6080),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6084));
+		cmdq_util_err("dip (DCE): 0x%x7088(0x%x)-0x%x708c(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6088),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x608C));
+		/*DCES register dump*/
+		cmdq_util_err("dip (DCES): 0x%x7140(0x%x)-0x%x7144(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6140),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6144));
+		cmdq_util_err("dip (DCES): 0x%x7148(0x%x)-0x%x714c(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6148),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x614C));
+		cmdq_util_err("dip (DCES): 0x%x7150(0x%x)-0x%x7154(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6150),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6154));
+		cmdq_util_err("dip (DCES): 0x%x7158(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6158));
+
 		cmdqdebugcmd = 0x1502;
 		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
 		cmdq_util_err("CNR debug:0x%x : dip: 0x%x2194(0x%x)",
@@ -1520,6 +1551,68 @@ static signed int DIP_Dump_IMGSYS_DIP_Reg(void)
 		cmdqdebugcmd = 0x22002;
 		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
 		cmdq_util_err("NR3D debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+
+		cmdqdebugcmd = 0x2C02;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("UNP_D6 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x12C02;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("UNP_D6 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x22C02;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("UNP_D6 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+		DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x32C02;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("UNP_D6 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x42C02;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("UNP_D6 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+
+		cmdqdebugcmd = 0x3102;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("C02_D2 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x13102;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("C02_D2 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x23102;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("C02_D2 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+		DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x33102;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("C02_D2 debug:0x%x : dip: 0x%x2194(0x%x)",
+			cmdqdebugcmd,
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x1194));
+		cmdqdebugcmd = 0x43102;
+		DIP_WR32(dipRegBasAddr + 0x1190, cmdqdebugcmd);
+		cmdq_util_err("C02_D2 debug:0x%x : dip: 0x%x2194(0x%x)",
 			cmdqdebugcmd,
 			DipDumpTL[DIPNo].region,
 			DIP_RD32(dipRegBasAddr + 0x1194));
@@ -2314,6 +2407,10 @@ static signed int DIP_Dump_IMGSYS_DIP_Reg(void)
 		dbg_out = DIP_RD32(dipRegBasAddr + 0x1194);
 		cmdq_util_err("nr3d dbg_sel: 0x%08x dbg_out: 0x%08x\n",
 					dbg_sel, dbg_out);
+		DIP_WR32(dipRegBasAddr + 0x1190, 0x00042002);
+		dbg_out = DIP_RD32(dipRegBasAddr + 0x1194);
+		cmdq_util_err("nr3d dbg_sel: 0x%08x dbg_out: 0x%08x\n",
+					dbg_sel, dbg_out);
 
 		/* DMA Error */
 		cmdq_util_err("DMA_ERR_EN  0x%x1020(0x%x)",
@@ -2743,6 +2840,56 @@ static signed int DIP_Dump_IMGSYS_DIP_Reg(void)
 			DIP_RD32(dipRegBasAddr + 0x87C),
 			DipDumpTL[DIPNo].region,
 			DIP_RD32(dipRegBasAddr + 0x880));
+
+                #ifdef OPLUS_FEATURE_CAMERA_COMMON
+		cmdq_util_err("nr3d: 0x%x8000(0x%x)-0x%x8004(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7000),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7004));
+		cmdq_util_err("nr3d: 0x%x8008(0x%x)-0x%x800c(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7008),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x700c));
+		cmdq_util_err("nr3d: 0x%x8010(0x%x)-0x%x8014(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7010),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7014));
+		cmdq_util_err("nr3d: 0x%x8218(0x%x)-0x%x821c(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7218),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x721c));
+		cmdq_util_err("nr3d: 0x%x8220(0x%x)-0x%x8224(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7220),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7224));
+		cmdq_util_err("nr3d: 0x%x8228(0x%x)-0x%x822c(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x7228),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x722c));
+		cmdq_util_err("mix_d2: 0x%x7b40(0x%x)-0x%x7b44(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6b40),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6b44));
+
+
+		cmdq_util_err("dce: 0x%x7000(0x%x)-0x%x7088(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6000),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6088));
+		cmdq_util_err("dce: 0x%x708C(0x%x)-0x%x7090(0x%x)",
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x608C),
+			DipDumpTL[DIPNo].region,
+			DIP_RD32(dipRegBasAddr + 0x6090));
+                #endif /*OPLUS_FEATURE_CAMERA_COMMON*/
 
 		/* CRZ */
 		cmdq_util_err("crz: 0x%x8700(0x%x)-0x%x8704(0x%x)",

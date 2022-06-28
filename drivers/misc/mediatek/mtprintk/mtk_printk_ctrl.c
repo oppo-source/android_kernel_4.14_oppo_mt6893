@@ -39,8 +39,17 @@ int printk_ctrl = 1;
 
 module_param_named(disable_uart, printk_ctrl, int, 0644);
 
+//#ifdef OPLUS_FEATURE_STABILITY
+extern int printk_force_uart;
+//#endif
+
 bool mt_get_uartlog_status(void)
 {
+//#ifdef OPLUS_FEATURE_STABILITY
+	if (printk_force_uart == 1) {
+		return true;
+	}
+//#endif
 	if (printk_ctrl == 1)
 		return false;
 	else if ((printk_ctrl == 0) || (printk_ctrl == 2))
@@ -50,6 +59,11 @@ bool mt_get_uartlog_status(void)
 
 void mt_disable_uart(void)
 {
+//#ifdef OPLUS_FEATURE_STABILITY
+	if (printk_force_uart) {
+		return;
+	}
+//#endif
 	/* uart print not always enable */
 	if (printk_ctrl != 2)
 		printk_ctrl = 1;

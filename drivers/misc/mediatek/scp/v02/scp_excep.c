@@ -28,6 +28,10 @@
 #include "scp_feature_define.h"
 #include "scp_l1c.h"
 
+#ifdef OPLUS_FEATURE_SENSOR
+#include <soc/oplus/system/kernel_fb.h>
+#endif /* OPLUS_FEATURE_SENSOR */
+
 struct scp_dump_st {
 	uint8_t *detail_buff;
 	uint8_t *ramdump;
@@ -213,6 +217,53 @@ void scp_do_tbufdump(uint32_t *out, uint32_t *out_end)
  * @param scp_core_id:  core id
  * @return:             scp dump size
  */
+static void write_infra_reg_to_scp(void)
+{
+	extern struct scp_regs scpreg;
+	int i = 0;
+	u32 __iomem* infra_reg_dump = scpreg.sram + scpreg.scp_tcmsize - 0x40;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xb80);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xb84);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xb8c);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xb90);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xba0);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xba4);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xba8);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbac);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbb0);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbb4);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbb8);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbbc);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbc0);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+	i++;
+	infra_reg_dump[i] = readl(scpreg.scpsys + 0xbc4);
+	pr_notice("[SCP] infra_reg_dump[%d] = 0x%08x\n", i, infra_reg_dump[i]);
+}
 static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 		enum scp_core_id id)
 {
@@ -230,6 +281,7 @@ static unsigned int scp_crash_dump(struct MemoryDump *pMemoryDump,
 		scp_awake_fail_flag = 1;
 	}
 
+	write_infra_reg_to_scp();
 	memcpy_from_scp((void *)&(pMemoryDump->l2tcm),
 		(void *)(SCP_TCM),
 		(SCP_A_TCM_SIZE));
@@ -319,7 +371,9 @@ static void scp_prepare_aed_dump(char *aed_str,
 void scp_aed(enum SCP_RESET_TYPE type, enum scp_core_id id)
 {
 	char *scp_aed_title = NULL;
-
+#ifdef OPLUS_FEATURE_SENSOR
+	unsigned char fb_str[256] = "";
+#endif /*OPLUS_FEATURE_SENSOR*/
 	if (!scp_ee_enable) {
 		pr_debug("[SCP]ee disable value=%d\n", scp_ee_enable);
 		return;
@@ -360,12 +414,18 @@ void scp_aed(enum SCP_RESET_TYPE type, enum scp_core_id id)
 
 	scp_prepare_aed_dump(scp_aed_title, id);
 
-	/* scp aed api, only detail information available*/
 	aed_common_exception_api("scp", NULL, 0, NULL, 0,
 			scp_dump.detail_buff, DB_OPT_DEFAULT);
-
+#ifndef OPLUS_FEATURE_SENSOR
+	unsigned char fb_str[256] = "";
+	/* scp aed api, only detail information available*/
 	pr_debug("[SCP] scp exception dump is done\n");
+#else
+	pr_info("[SCP] scp exception dump is done\n");
+	scnprintf(fb_str,sizeof(fb_str),"%s: core0 pc:0x%08x,lr:0x%08x;core1 pc:0x%08x,lr:0x%08x:$$module@@scp",scp_aed_title,c0_m.pc,c0_m.lr,c1_m.pc,c1_m.lr);
 
+	oplus_kevent_fb_str(FB_SENSOR,FB_SENSOR_ID_CRASH,fb_str);
+#endif  //OPLUS_FEATURE_SENSOR
 	mutex_unlock(&scp_excep_mutex);
 }
 

@@ -25,7 +25,11 @@
 #define DEBUG_VOWDRV 1
 
 #if DEBUG_VOWDRV
+#ifdef OPLUS_FEATURE_VOICE_WAKEUP_LOG_ENABLE
+#define VOWDRV_DEBUG(format, args...) pr_err(format, ##args)
+#else
 #define VOWDRV_DEBUG(format, args...) pr_debug(format, ##args)
+#endif
 #else
 #define VOWDRV_DEBUG(format, args...)
 #endif
@@ -106,7 +110,7 @@
 #define VOW_PCM_DUMP_BYTE_SIZE         0xA00 /* 320 * 8 */
 #define VOW_EXTRA_DATA_SIZE            0x100 /* 256 */
 
-#define VOW_ENGINE_INFO_LENGTH_BYTE    32
+#define VOW_ENGINE_INFO_LENGTH_BYTE    64
 
 #if (defined CONFIG_MTK_VOW_DUAL_MIC_SUPPORT && defined DUAL_CH_TRANSFER)
 #define VOW_RECOGDATA_OFFSET          (VOW_VOICEDATA_OFFSET + VOW_MAX_MIC_NUM * VOW_VOICEDATA_SIZE)
@@ -133,6 +137,7 @@
 #define VOW_GET_GOOGLE_ARCH           _IOW(VOW_IOC_MAGIC, 0x13, unsigned int)
 #define VOW_SET_PAYLOADDUMP_INFO      _IOW(VOW_IOC_MAGIC, 0x16, unsigned int)
 #define VOW_READ_VOICE_DATA           _IOW(VOW_IOC_MAGIC, 0x17, unsigned int)
+#define VOW_GET_BARGEIN_FLAG          _IOW(VOW_IOC_MAGIC, 0x18, unsigned int)
 
 #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT
 
@@ -323,6 +328,7 @@ enum vow_model_control_t {
 enum {
 	VENDOR_ID_MTK = 77,     //'M'
 	VENDOR_ID_AMAZON = 65,  //'A'
+	VENDOR_ID_SPEECH = 83,  //'S
 	VENDOR_ID_OTHERS = 71,
 	VENDOR_ID_NONE = 0
 };

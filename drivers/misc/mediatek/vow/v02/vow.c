@@ -104,6 +104,7 @@ static bool file_bargein_delay_info_open;
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
 static bool file_recog_data_open;
 static bool file_vffp_data_open;
+static unsigned long  barge_in_is_on = 0;
 
 /*****************************************************************************
  * Function  Declaration
@@ -662,6 +663,12 @@ static void vow_service_Init(void)
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
 		vowserv.scp_dual_mic_switch = VOW_ENABLE_DUAL_MIC;
 		vowserv.mtkif_type = 0;
+
+		//set default value to platform identifier and version
+		memset(vowserv.google_engine_arch, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
+		snprintf(vowserv.google_engine_arch, VOW_ENGINE_INFO_LENGTH_BYTE, "32fe89be-5205-3d4b-b8cf-55d650d9d200");
+		vowserv.google_engine_version = DEFAULT_GOOGLE_ENGINE_VER;
+		memset(vowserv.alexa_engine_version, 0, VOW_ENGINE_INFO_LENGTH_BYTE);
 	} else {
 		int ipi_size;
 
@@ -716,8 +723,6 @@ static void vow_service_Init(void)
 			VOWDRV_DEBUG(
 			"IPIMSG_VOW_APREGDATA_ADDR ipi send error\n");
 		}
-		sprintf(vowserv.google_engine_arch, "RISC-V");
-		vowserv.google_engine_version = DEFAULT_GOOGLE_ENGINE_VER;
 		vow_ipi_send(IPIMSG_VOW_GET_ALEXA_ENGINE_VER, 0, NULL,
 				 VOW_IPI_BYPASS_ACK);
 		vow_ipi_send(IPIMSG_VOW_GET_GOOGLE_ENGINE_VER, 0, NULL,
@@ -753,7 +758,11 @@ int vow_service_GetParameter(unsigned long arg)
 #ifdef CONFIG_MTK_TINYSYS_SCP_SUPPORT
 static int vow_service_CopyModel(int slot)
 {
-	if (vowserv.vow_info_apuser[3] > VOW_MODEL_SIZE) {
+	if(VENDOR_ID_SPEECH == vowserv.vow_info_apuser[5]) {
+		//ignore aispeech model size
+		VOWDRV_DEBUG("ignore vow Modle size check in case of aispeech %d\n", vowserv.vow_info_apuser[3]);
+	}
+	else if (vowserv.vow_info_apuser[3] > VOW_MODEL_SIZE) {
 		VOWDRV_DEBUG("vow DMA Size Too Large\n");
 		return -EFAULT;
 	}
@@ -3032,11 +3041,13 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		VOWDRV_DEBUG("VOW_BARGEIN_ON, irq: %d", (unsigned int)arg);
 		if (!VowDrv_SetBargeIn(1, (unsigned int)arg))
 			ret = -EFAULT;
+		barge_in_is_on = 1;
 		break;
 	case VOW_BARGEIN_OFF:
 		VOWDRV_DEBUG("VOW_BARGEIN_OFF, irq: %d", (unsigned int)arg);
 		if (!VowDrv_SetBargeIn(0, (unsigned int)arg))
 			ret = -EFAULT;
+		barge_in_is_on = 0;
 		break;
 #endif  /* #ifdef CONFIG_MTK_VOW_BARGE_IN_SUPPORT */
 	case VOW_CHECK_STATUS:
@@ -3074,6 +3085,12 @@ static long VowDrv_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
 		break;
 	case VOW_MODEL_STOP:
 		vow_service_SetModelStatus(VOW_MODEL_STATUS_STOP, arg);
+		break;
+	case VOW_GET_BARGEIN_FLAG:
+		copy_to_user((void __user *)arg,
+				 &barge_in_is_on,
+				 sizeof(unsigned long));
+	pr_err("VOW_GET_BARGEIN_FLAG %lu",barge_in_is_on);
 		break;
 	case VOW_GET_GOOGLE_ENGINE_VER: {
 		copy_to_user((void __user *)arg,
@@ -3170,6 +3187,7 @@ static long VowDrv_compat_ioctl(struct file *fp,
 	case VOW_RECOG_DISABLE:
 	case VOW_BARGEIN_ON:
 	case VOW_BARGEIN_OFF:
+	case VOW_GET_BARGEIN_FLAG:
 	case VOW_GET_GOOGLE_ENGINE_VER:
 		ret = fp->f_op->unlocked_ioctl(fp, cmd, arg);
 		break;

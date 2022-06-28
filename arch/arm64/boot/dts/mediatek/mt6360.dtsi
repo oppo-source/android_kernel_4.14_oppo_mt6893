@@ -91,8 +91,9 @@
 		};
 		rgbled {
 			compatible = "mediatek,mt6360_pmu_rgbled";
-			mt,led_name = "mt6360_pmu_led1", "mt6360_pmu_led2",
-				      "mt6360_pmu_led3", "mt6360_pmu_led4";
+			mt,led_name = "red", "green",
+				      "blue", "mt6360_pmu_led4";
+			oplus,rgbleds_support = <21015 21217>;
 			mt,led_default_trigger = "cc_mode", "cc_mode",
 						 "cc_mode", "none";
 		};
@@ -174,6 +175,10 @@
 			regulator-name = "VFP";
 			regulator-min-microvolt = <1200000>;
 			regulator-max-microvolt = <3600000>;
+	               //#ifdef OPLUS_FEATURE_TP_BASIC
+	               /* add pingrp for touchscreen */
+                       //regulator-always-on;
+                       //#endif /*OPLUS_FEATURE_TP_BASIC*/
 		};
 		mt_pmic_vtp_ldo_reg: ldo2 {
 			regulator-compatible = "LDO2";
@@ -190,8 +195,8 @@
 		mt_pmic_vmch_ldo_reg: ldo5 {
 			regulator-compatible = "LDO5";
 			regulator-name = "VMCH";
-			regulator-min-microvolt = <2700000>;
-			regulator-max-microvolt = <3600000>;
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
 		};
 	};
 };
